@@ -1,0 +1,272 @@
+﻿
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Calculator
+{
+    public class Parser: IParser
+    {
+        private List<int> _numbers;
+        private List<string> _operations;
+        private ICalculation _calculator = new Calculation();
+        private Stack<Tuple<string, int>> _operationsStack;
+        private Stack<Tuple<string, string, string>> _operationsStackTest;
+        private Queue<Operation> _operationsQueue;
+        private List<Operation> _operationsList; 
+
+        public Parser(List<int> numbers, List<string> operations)
+        {
+            _numbers = numbers;
+            _operations = operations;
+            _operationsStack = new Stack<Tuple<string, int>>();
+            _operationsStackTest = new Stack<Tuple<string, string, string>>();
+            _operationsQueue = new Queue<Operation>();
+            _operationsList = new List<Operation>();
+        }
+
+        public void FormQueue()
+        {
+            for (int i = 0; i < _operations.Count; i++)
+            {
+                var operation = _operations[i];
+                var nextOperation = (i < _operations.Count - 1) ? _operations[i + 1] : "";
+
+                int indexNumbers = 0, indexOperations = 0;
+
+                int result = 0;
+
+                if (operation == "(")
+                {
+                    continue;
+                }
+
+                if (operation == ")")
+                {
+                    continue;
+                }
+
+                if (nextOperation != "(")
+                {
+                    Operation mathOperation = new Operation();
+
+                    if (indexNumbers == 0)
+                    {
+                        mathOperation.LeftArgument = _numbers[0];
+                        mathOperation.RightArgument = _numbers[1];
+                        indexNumbers++;
+                    }
+                    else
+                    {
+                        mathOperation.LeftArgument = result;
+                        mathOperation.RightArgument = _numbers[indexNumbers];
+                    }
+                    indexNumbers++;
+                    mathOperation.MathOperation = operation;
+
+
+                    switch (operation)
+                    {
+                        case "+":
+                            //_operationsQueue.Enqueue(mathOperation);
+                            _operationsList.Add(mathOperation);
+                            break;
+                        case "-":
+                            //_operationsQueue.Enqueue(mathOperation);
+                            _operationsList.Add(mathOperation);
+                            break;
+                        case "*":
+                            PuttingDivAndMulToQueue(mathOperation, indexNumbers);
+                            break;
+                        case "/":
+                            break;
+                    }
+                }
+            }
+        }
+
+        private void PuttingDivAndMulToQueue(Operation mathOperation, int indexNumbers)
+        {
+            if (indexNumbers > 0)
+            {
+                var temp = new Operation
+                {
+                    LeftArgument = _operationsList.FirstOrDefault().LeftArgument,
+                    RightArgument = _operationsList.FirstOrDefault().RightArgument,
+                    MathOperation = _operationsList.FirstOrDefault().MathOperation
+                };
+                _operationsList[_operationsList.Count - 1] = mathOperation;
+                _operationsList.Add(temp);
+
+                //_operationsQueue.Peek().LeftArgument = mathOperation.LeftArgument;
+                //_operationsQueue.Peek().RightArgument = mathOperation.RightArgument;
+                //_operationsQueue.Peek().MathOperation = mathOperation.MathOperation;
+                //_operationsQueue.Enqueue(temp);
+            }
+            else
+            {
+                _operationsQueue.Enqueue(mathOperation);
+            }
+        }
+
+        // 7+2-(12-3-7)*2
+        //public int Calculate()
+        //{
+        //    int indexOp = 0;
+        //    int indexNumbers = 0;
+        //    int temp = 0;
+        //    int result = 0;
+        //    bool wasSkipped = false;
+        //    string previousOp = null;
+        //    string skippedOp = null;
+        //    int skippedValue = 0;
+
+        //    for (int i = 0; i < _operations.Count; i++)
+        //    {
+        //        string operation = _operations[i];
+        //        string nextOperation = (i < _operations.Count - 1) ? _operations[i + 1] : "";
+
+        //        if (operation == "(")
+        //        {
+        //            previousOp = operation;
+        //            continue;
+        //        }
+
+        //        if (operation == ")")
+        //        {
+        //            if (skippedOp != null && (nextOperation != "*" && nextOperation != "/"))
+        //            {
+        //                result = CalcRolledBackOp(skippedValue, result, skippedOp);
+        //                skippedOp = null;
+        //            }
+        //            previousOp = operation;
+        //            continue;
+        //        }
+
+        //        if (nextOperation != "(" )
+        //        {
+        //            int leftArg, rightArg;
+        //            int tempRightArg;
+
+        //            if (indexNumbers == 0)
+        //            {
+        //                leftArg = _numbers[0];
+        //                rightArg = tempRightArg = _numbers[1];
+        //                indexNumbers++;
+        //            }
+        //            else
+        //            {
+        //                if (wasSkipped)
+        //                {
+        //                    leftArg = _numbers[indexNumbers];
+        //                    wasSkipped = false;
+        //                    indexNumbers++; // Here can be fail
+        //                }
+        //                else
+        //                {
+        //                    leftArg = result;   
+        //                }
+        //                rightArg = tempRightArg = _numbers[indexNumbers];
+        //            }
+        //            indexNumbers++;
+
+        //            switch (operation)
+        //            {
+        //                case "+":
+        //                    result = _calculator.Add(leftArg, rightArg);
+        //                    break;
+        //                case "-":
+        //                    result = _calculator.Sub(leftArg, rightArg);
+        //                    break;
+        //                case "*":
+        //                    if (indexNumbers > 2 && previousOp != ")")
+        //                    {
+        //                        result = RollBack(result, tempRightArg, previousOp);
+        //                        leftArg = _numbers[indexNumbers - 2];
+        //                        result = _calculator.Mul(leftArg, rightArg);
+        //                        result = CalcRolledBackOp(_numbers[indexNumbers - 3], result, previousOp);
+        //                    }
+        //                    else
+        //                    {
+        //                        result = _calculator.Mul(leftArg, rightArg);
+        //                    }
+        //                    break;
+        //                case "/":
+        //                    if (indexNumbers > 2)
+        //                    {
+        //                        result = RollBack(result, tempRightArg, previousOp);
+        //                        leftArg = _numbers[indexNumbers - 2];
+        //                        result = _calculator.Div(leftArg, rightArg);
+        //                        result = CalcRolledBackOp(_numbers[indexNumbers - 3], result, previousOp);
+        //                    }
+        //                    else
+        //                    {
+        //                        result = _calculator.Div(leftArg, rightArg);
+        //                    }
+        //                    break;
+        //            }
+        //            previousOp = operation;
+        //        }
+        //        else
+        //        {
+        //            skippedOp = operation;
+        //            if (indexNumbers == 0)
+        //            {
+        //                if (indexNumbers > 0)
+        //                {
+        //                    skippedValue = result;
+        //                }
+        //                else
+        //                {
+        //                    skippedValue = _numbers[0];
+        //                    indexNumbers++;   
+        //                }
+        //            }
+        //            else
+        //            {
+        //                skippedValue = result;
+        //            }
+        //            wasSkipped = true;
+        //        }
+        //    }
+
+        //    if (skippedOp != null )
+        //    {
+        //        result = CalcRolledBackOp(skippedValue, result, skippedOp);
+        //        skippedOp = null;
+        //    }
+            
+        //    return result;
+        //}
+
+        private int RollBack(int result, int rightArg, string previousOp)
+        {
+            switch (previousOp)
+            {
+                case "+":
+                    return _calculator.Sub(result, rightArg);
+                case "-":
+                    return _calculator.Add(result, rightArg);
+                default:
+                    return result;
+            }
+        }
+
+        private int CalcRolledBackOp(int leftArg, int rightArg, string operation)
+        {
+            switch (operation)
+            {
+                case "+":
+                    return _calculator.Add(leftArg, rightArg);
+                case "-":
+                    return _calculator.Sub(leftArg, rightArg);
+                case "*":
+                    return _calculator.Mul(leftArg, rightArg);
+                case "/":
+                    return _calculator.Div(leftArg, rightArg);
+                default:
+                    return leftArg;
+            }
+        }
+    }
+}
